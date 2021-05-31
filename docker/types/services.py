@@ -559,37 +559,79 @@ def convert_service_ports(ports):
 
 class ServiceMode(dict):
     """
-        Indicate whether a service should be deployed as a replicated or global
-        service, and associated parameters
+        Indicate whether a service should be deployed as a replicated,
+        replicated-job, global or global-job service,
+        and associated parameters
 
         Args:
-            mode (string): Can be either ``replicated`` or ``global``
+            mode (string): Can be one of ``replicated``, ``replicated-job``,
+            ``global`` or ``global-job``
             replicas (int): Number of replicas. For replicated services only.
     """
-    def __init__(self, mode, replicas=None):
-        if mode not in ('replicated', 'global'):
+    MODE_CONVERSION_TABLE = {
+        'global-job': 'GlobalJob',
+        'replicated-job': 'ReplicatedJob'
+    }
+
+    def __init__(self, mode, replicas=None, max_concurrent=None):
+        if mode not in (
+            'replicated', 'replicated-job', 'global', 'global-job'
+        ):
             raise errors.InvalidArgument(
-                'mode must be either "replicated" or "global"'
+                'mode must be either "replicated", "replicated-job",'
+                '"global" or "global-job"'
             )
-        if mode != 'replicated' and replicas is not None:
+        if mode not in (
+            'replicated', 'replicated-job'
+        ) and replicas is not None:
             raise errors.InvalidArgument(
-                'replicas can only be used for replicated mode'
+                'replicas can only be used for replicated '
+                'or replicated-job mode'
             )
-        self[mode] = {}
-        if replicas is not None:
-            self[mode]['Replicas'] = replicas
+        if mode != 'replicated-job' and max_concurrent is not None:
+            raise errors.InvalidArgument(
+                'max concurrent can only be used for replicated-job mode'
+            )
+        converted_mode = self._convert_mode(mode)
+        self[converted_mode] = {}
+        if replicas is not None and mode == 'replicated':
+            self[converted_mode]['Replicas'] = replicas
+        if replicas is not None and mode == 'replicated-job':
+            self[converted_mode]['TotalCompletions'] = replicas
+            self[converted_mode]['MaxConcurrent'] = max_concurrent or replicas
+
+    @classmethod
+    def _convert_mode(cls, original_mode):
+        return cls.MODE_CONVERSION_TABLE.get(original_mode, original_mode)
 
     @property
     def mode(self):
+        # TODO better
         if 'global' in self:
             return 'global'
-        return 'replicated'
+
+        if 'replicated' in self:
+            return 'replicated'
+
+        if 'ReplicatedJob' in self:
+            return 'replicated-job'
+
+        if 'GlobalJob' in self:
+            return 'global-job'
 
     @property
     def replicas(self):
-        if self.mode != 'replicated':
+        if self.mode == 'replicated':
+            return self['replicated'].get('Replicas')
+        elif self.mode == 'replicated-job':
+            return self['ReplicatedJob'].get('TotalCompletions')
+        return None
+
+    @property
+    def max_concurrent(self):
+        if self.mode != 'replicated-job':
             return None
-        return self['replicated'].get('Replicas')
+        return self['ReplicatedJob'].get('MaxConcurrent')
 
 
 class SecretReference(dict):

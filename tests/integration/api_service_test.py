@@ -628,6 +628,41 @@ class ServiceTest(BaseAPIIntegrationTest):
         assert 'Replicated' in svc_info['Spec']['Mode']
         assert svc_info['Spec']['Mode']['Replicated'] == {'Replicas': 5}
 
+    @requires_api_version('1.41')
+    def test_create_service_replicated_job_mode(self):
+        container_spec = docker.types.ContainerSpec(
+            TEST_IMG, ['echo', 'hello']
+        )
+        task_tmpl = docker.types.TaskTemplate(container_spec)
+        name = self.get_service_name()
+        svc_id = self.client.create_service(
+            task_tmpl, name=name,
+            mode=docker.types.ServiceMode(
+                'replicated-job', replicas=6, max_concurrent=2
+            )
+        )
+        svc_info = self.client.inspect_service(svc_id)
+        assert 'Mode' in svc_info['Spec']
+        assert 'ReplicatedJob' in svc_info['Spec']['Mode']
+        assert svc_info['Spec']['Mode']['ReplicatedJob'] == {
+            'TotalCompletions': 6, 'MaxConcurrent': 2
+        }
+
+    @requires_api_version('1.41')
+    def test_create_service_global_job_mode(self):
+        container_spec = docker.types.ContainerSpec(
+            TEST_IMG, ['echo', 'hello']
+        )
+        task_tmpl = docker.types.TaskTemplate(container_spec)
+        name = self.get_service_name()
+        svc_id = self.client.create_service(
+            task_tmpl, name=name,
+            mode=docker.types.ServiceMode('global-job')
+        )
+        svc_info = self.client.inspect_service(svc_id)
+        assert 'Mode' in svc_info['Spec']
+        assert 'GlobalJob' in svc_info['Spec']['Mode']
+
     @requires_api_version('1.25')
     def test_update_service_force_update(self):
         container_spec = docker.types.ContainerSpec(

@@ -129,8 +129,8 @@ class ServiceApiMixin(object):
             name (string): User-defined name for the service. Optional.
             labels (dict): A map of labels to associate with the service.
                 Optional.
-            mode (ServiceMode): Scheduling mode for the service (replicated
-                or global). Defaults to replicated.
+            mode (ServiceMode): Scheduling mode for the service (replicated,
+                replicated-job, global or global-job). Defaults to replicated.
             update_config (UpdateConfig): Specification for the update strategy
                 of the service. Default: ``None``
             rollback_config (RollbackConfig): Specification for the rollback
@@ -378,8 +378,8 @@ class ServiceApiMixin(object):
             name (string): New name for the service. Optional.
             labels (dict): A map of labels to associate with the service.
                 Optional.
-            mode (ServiceMode): Scheduling mode for the service (replicated
-                or global). Defaults to replicated.
+            mode (ServiceMode): Scheduling mode for the service (replicated,
+                replicated-job, global or global-job). Defaults to replicated.
             update_config (UpdateConfig): Specification for the update strategy
                 of the service. Default: ``None``.
             rollback_config (RollbackConfig): Specification for the rollback

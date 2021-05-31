@@ -335,11 +335,27 @@ class ServiceModeTest(unittest.TestCase):
         with pytest.raises(InvalidArgument):
             ServiceMode('global', 21)
 
+    def test_global_job_replicas_error(self):
+        with pytest.raises(InvalidArgument):
+            ServiceMode('global-job', 21)
+
     def test_replicated_replicas(self):
         mode = ServiceMode('replicated', 21)
         assert mode == {'replicated': {'Replicas': 21}}
         assert mode.mode == 'replicated'
         assert mode.replicas == 21
+
+    def test_replicated_job_replicas(self):
+        mode = ServiceMode('replicated-job', 21, 3)
+        assert mode == {
+            'ReplicatedJob': {
+                'TotalCompletions': 21,
+                'MaxConcurrent': 3
+            }
+        }
+        assert mode.mode == 'replicated-job'
+        assert mode.replicas == 21
+        assert mode.max_concurrent == 3
 
     def test_replicated_replicas_0(self):
         mode = ServiceMode('replicated', 0)
